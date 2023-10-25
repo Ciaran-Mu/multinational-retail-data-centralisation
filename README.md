@@ -1,1 +1,1 @@
-# multinational-retail-data-centralisation
+# Multinational Retail Data Centralisation
