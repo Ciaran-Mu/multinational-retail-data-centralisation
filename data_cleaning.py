@@ -2,9 +2,26 @@ import pandas as pd
 from data_extraction import DataExtractor
 
 class DataCleaning:
+    '''
+    This class is used to create an object for data cleaning purposes: taking in data in the form of pnadas dataframes and returning the same dataframes after cleaning
 
-    # Luhns algorithm for verifying the final check digit of the card number
-    def check_luhn(self, card_number: int):
+    No attributes to this class.
+    '''
+
+    @staticmethod
+    def __check_luhn(card_number: int):
+        '''
+        This method checks if a card number is valid by checking it against Luhn's algorithm (used by major card providers).
+        The final digit of a card number is a check digit calculated by Luhn's algorithm which is a sum of alternating 1 times and 2 times each digit.
+        Where if the multiplication results in a number > 10 the two digits of that results are added together.
+        And finally the check digit is calculated by taking the sum modulo 10 and subtracting it from 10.
+
+        Args:
+            card_number (int): the card number which is usually 8-19 digits but this method will work on any length.
+
+        Returns:
+            (bool): boolean result based on whether the final check digit matches the Luhn algorithm.
+        '''
         sum = 0
         card_string = str(card_number)
         payload = card_string[-2::-1]
@@ -22,7 +39,17 @@ class DataCleaning:
         else:
             return False
     
-    def clean_user_data(self, legacy_users_df: pd.DataFrame):
+    @staticmethod
+    def clean_user_data(legacy_users_df: pd.DataFrame):
+        '''
+        This method cleans the dataframe of users details, removing null and junk records and correcting formats followed by converting to appropriate type.
+
+        Args:
+            legacy_users_df (DataFrame): pandas dataframe containing users details.
+
+        Returns:
+            legacy_users_df (DataFrame): pandas dataframe containing users details after cleaning.
+        '''
         # Correct GGB error in country codes
         legacy_users_df['country_code'].replace('GGB', 'GB', inplace=True)
         # Drop the rows with NULL or rubbish data
@@ -47,7 +74,18 @@ class DataCleaning:
         # TODO: consider reindexing dataframe
         return legacy_users_df
 
-    def clean_card_data(self, card_details_df: pd.DataFrame):
+    @staticmethod
+    def clean_card_data(card_details_df: pd.DataFrame):
+        '''
+        This method cleans the dataframe of users card details, removing null and junk records and correcting formats followed by converting to appropriate type.
+        Card numbers are also checked for validity with Luhn's algorithm. As a significant portion of card numbers fail validation, a new column of (bool) representing pass/fail is created rather than deleting failed cards.
+
+        Args:
+            card_details_df (DataFrame): pandas dataframe containing users card details.
+
+        Returns:
+            card_details_df (DataFrame): pandas dataframe containing users card details after cleaning.
+        '''
         # Drop any exact duplicates (10 found)
         card_details_df.drop_duplicates(inplace=True)
         # As expected these garbage card_provider entries are rows of garbage so can be dropped
@@ -57,7 +95,7 @@ class DataCleaning:
         # Remove all the question marks preceding card_numbers
         card_details_df['card_number'].replace('\?*', '', regex=True, inplace=True)
         # The majority of card numbers do not pass luhn validation, so create a new column to reflect this rather than deleting data
-        card_details_df.insert(1, 'valid_card_number', card_details_df['card_number'].apply(self.check_luhn))
+        card_details_df.insert(1, 'valid_card_number', card_details_df['card_number'].apply(DataCleaning.__check_luhn))
         # Convert the card number to int
         card_details_df['card_number'] = pd.to_numeric(card_details_df['card_number'])
         # Convert the date payment confirmed to datetime
@@ -68,7 +106,17 @@ class DataCleaning:
         card_details_df.reset_index(drop=True, inplace=True)
         return card_details_df
     
-    def clean_stores_data(self, store_details_df: pd.DataFrame):
+    @staticmethod
+    def clean_stores_data(store_details_df: pd.DataFrame):
+        '''
+        This method cleans the dataframe of stores details, removing null and junk records and correcting formats followed by converting to appropriate type.
+
+        Args:
+            store_details_df (DataFrame): pandas dataframe containing stores details.
+
+        Returns:
+            store_details_df (DataFrame): pandas dataframe containing stores details after cleaning.
+        '''
         # Remove the 10  rows full of NULL
         store_details_df.drop(store_details_df[store_details_df['lat'].isin(('13KJZ890JH', '2XE1OWOC23', 'NULL', 'OXVE5QR07O',
             'VKA5I8H32X', 'LACCWDI0SB', 'A3O5CBWAMD', 'UXMWDMX1LC'))].index, inplace=True)
@@ -93,7 +141,18 @@ class DataCleaning:
         store_details_df.reset_index(drop=True, inplace=True)
         return store_details_df
     
-    def convert_product_weights(self, product_details_df: pd.DataFrame):
+    @staticmethod
+    def __convert_product_weights(product_details_df: pd.DataFrame):
+        '''
+        This method converts the product weights from g, ml, oz all to kg and converts to float.
+        Any records of weights written as a multiplication expression are equated before converting.
+
+        Args:
+            product_details_df (DataFrame): pandas dataframe containing product details.
+
+        Returns:
+            product_details_df (DataFrame): pandas dataframe containing product details after converting weights.
+        '''
         # Take note of indexes of weights in g or ml that will need a factor of 0.001 conversion
         weight_g_indexes = product_details_df[product_details_df['weight'].str.contains('\d[g]|[m][l]', regex=True)].index
         # Take note of indexes of weights in oz that will need a factor of 0.0283 conversion
@@ -114,7 +173,17 @@ class DataCleaning:
 
         return product_details_df
     
-    def clean_products_data(self, product_details_df: pd.DataFrame):
+    @staticmethod
+    def clean_products_data(product_details_df: pd.DataFrame):
+        '''
+        This method cleans the dataframe of product details, removing null and junk records and correcting formats followed by converting to appropriate type.
+
+        Args:
+            product_details_df (DataFrame): pandas dataframe containing product details
+
+        Returns:
+            product_details_df (DataFrame): pandas dataframe containing product details after cleaning
+        '''
         # Drop the uselerss index column
         product_details_df.drop(columns='Unnamed: 0', inplace=True)
         # Drop the rows filled with all na
@@ -124,7 +193,7 @@ class DataCleaning:
                                                                 'pets', 'homeware', 'health-and-beauty', 
                                                                 'food-and-drink', 'diy'])].index, inplace=True)
         # Convert the weights all to kg
-        product_details_df = self.convert_product_weights(product_details_df)
+        product_details_df = DataCleaning.__convert_product_weights(product_details_df)
         # Convert the EAN to int
         product_details_df['EAN'] = pd.to_numeric(product_details_df['EAN'])
         # Drop the £ symbol from prices
@@ -136,7 +205,17 @@ class DataCleaning:
 
         return product_details_df
     
-    def clean_orders_data(self, orders_df: pd.DataFrame):
+    @staticmethod
+    def clean_orders_data(orders_df: pd.DataFrame):
+        '''
+        This method cleans the dataframe of orders details, removing null and junk records and correcting formats followed by converting to appropriate type.
+
+        Args:
+            orders_df (DataFrame): pandas dataframe containing orders details
+
+        Returns:
+            orders_df (DataFrame): pandas dataframe containing orders details after cleaning
+        '''
         # It seems the names are all present in the legacy-users table so they are just mixed up
         # Assume the users table is the valid name and so drop the first_name and last_name from orders tabel so that users can be referenced by uuid
         orders_df.drop(columns=['first_name', 'last_name'], inplace=True)
@@ -145,11 +224,21 @@ class DataCleaning:
         # Drop the level_0 column (around 1/6 values are different from index, the rest the same, so making an assumption that it was just an index at some point)
         orders_df.drop(columns='level_0', inplace=True)
         # The majority of card numbers do not pass luhn validation, so maybe create a new column to reflect this rather than deleting data
-        orders_df.insert(3, 'valid_card_number', orders_df['card_number'].apply(self.check_luhn))
+        orders_df.insert(3, 'valid_card_number', orders_df['card_number'].apply(DataCleaning.__check_luhn))
 
         return orders_df
     
-    def clean_dates_data(self, dates_df: pd.DataFrame):
+    @staticmethod
+    def clean_dates_data(dates_df: pd.DataFrame):
+        '''
+        This method cleans the dataframe of date details, removing null and junk records and correcting formats followed by converting to appropriate type.
+
+        Args:
+            dates_df (DataFrame): pandas dataframe containing date details
+
+        Returns:
+            dates_df (DataFrame): pandas dataframe containing date details after cleaning
+        '''
         # Drop duplicates (14 found)
         dates_df.drop_duplicates()
         # Drop the rows filled with junk 
