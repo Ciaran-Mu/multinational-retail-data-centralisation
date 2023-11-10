@@ -17,7 +17,7 @@ Data sources are a variety of formats (PostrgreSQL database, PDF, CSV, JSON) hos
 To install this Multinational Retail Data Centralisation project clone and enter the repository
 ```
 git clone https://github.com/Ciaran-Mu/multinational-retail-data-centralisation.git
-cd hangman
+cd multinational-retail-data-centralisation
 ```
 Then run the main file
 ```
