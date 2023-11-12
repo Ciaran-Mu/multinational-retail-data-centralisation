@@ -23,7 +23,7 @@ Then run the main file
 ```
 python main.py
 ```
-Note that some functionality willnot be accessible without the database credentials which are in a secret file db_creds.yaml
+Note that some functionality will not be accessible without the database credentials which are in a secret file db_creds.yaml
 
 ## Usage instructions
 

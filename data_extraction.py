@@ -1,5 +1,5 @@
 import pandas as pd
-import tabula
+from tabula.io import read_pdf
 import requests
 from database_utils import DatabaseConnector
 import boto3
@@ -11,18 +11,48 @@ from tqdm import tqdm
 class DataExtractor:
     
     def read_rds_table(self, db_connector: DatabaseConnector, table_name: str):
+        '''
+        This method reads a table of a given name from the connected database.
+
+        Args:
+            db_connector (DatabaseConnector): instance of connector class to either local or remote database
+            table_name (str): name of table to read in database
+
+        Returns:
+            (DataFrame): pandas dataframe containing data from requested table
+        '''
         engine = db_connector.init_db_engine()
         with engine.connect() as conn:
             return pd.read_sql_table(table_name, engine)
         # TODO: add error handling for ValueError Table ____ not found
 
     def retrieve_pdf_data(self, link: str):
-        df_list = tabula.read_pdf(link, pages='all')
+        '''
+        This method retrieves data from a PDF located at a given URL and returns the data in a pandas dataframe.
+        Parsing of tabulated data in PDF is done using tabula-py module.
+
+        Args:
+            link (str): link to PDF hosted on the internet
+
+        Returns:
+            (DataFrame): pandas dataframe containing data retrieved from PDF
+        '''
+        df_list = read_pdf(link, pages='all')
         data_frame = pd.concat(df_list, ignore_index=True)
         return data_frame
-        # TODO: add error handling on link string input
+        # TODO: add error handling on link string input and read_pdf validity
 
     def list_number_of_stores(self, url: str, header: dict):
+        '''
+        This method requests the number of stores via an API hosted at a given URL.
+
+        Args:
+            url (str): link to the API
+            header (dict): dictionary containing API key
+
+        Returns:
+            (int): number of stores
+        '''
         endpoint = url + '/number_stores'
         response = requests.get(endpoint, headers=header)
         data = response.json()
@@ -30,6 +60,16 @@ class DataExtractor:
         # TODO: add response code error handling
 
     def retrieve_stores_data(self, url: str, header: dict):
+        '''
+        This method requests the details of each store via an API hosted at a given URL.
+
+        Args:
+            url (str): link to the API
+            header (dict): dictionary containing API key
+
+        Returns:
+            store_details (DataFrame): details of all stores in a pandas dataframe
+        '''
         number_stores = self.list_number_of_stores(url, header)
 
         data = []
@@ -67,6 +107,15 @@ class DataExtractor:
     #     return store_details
 
     def extract_from_s3(self, s3_uri: str):
+        '''
+        This method extracts data from AWS S3 objects in either CSV or JSON formats.
+
+        Args:
+            s3_uri (str): link to the object on AWS S3
+
+        Returns:
+            data_df (DataFrame): object data converted into a pandas dataframe
+        '''
         try:
             # Boto3 code that may raise exceptions
             s3 = boto3.client('s3')
