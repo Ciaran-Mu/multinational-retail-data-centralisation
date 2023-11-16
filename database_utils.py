@@ -2,7 +2,7 @@ import yaml
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy import inspect
-from sqlalchemy import text
+# from sqlalchemy import text
 
 class DatabaseConnector:
     '''
@@ -49,7 +49,7 @@ class DatabaseConnector:
         PORT = db_creds[f'{self.db}_PORT']
         # Initialise SQLalchemy engine
         engine = create_engine(f"{DATABASE_TYPE}+{DBAPI}://{USER}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}")
-        engine.execution_options(isolation_level='AUTOCOMMIT').connect()
+        # engine.execution_options(isolation_level='AUTOCOMMIT').connect()
         return engine
     
     def list_db_tables(self):
@@ -58,10 +58,9 @@ class DatabaseConnector:
         Prints to terminal and has no returned variables.
         '''
         engine = self.init_db_engine()
-        # TODO: change this to sqlalchemy inspect notation
-        with engine.connect() as conn:
-            tables = pd.read_sql_query("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'", conn)
-        print(tables)
+        with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
+            inspector = inspect(conn)
+            print(inspector.get_table_names())
 
     def upload_to_db(self, data_frame: pd.DataFrame, table_name: str):
         '''
@@ -73,4 +72,5 @@ class DatabaseConnector:
             table_name (str): name for the uploaded table
         '''
         engine = self.init_db_engine()
-        data_frame.to_sql(table_name, engine, if_exists='replace')
+        with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
+            data_frame.to_sql(table_name, conn, if_exists='replace', index=False)

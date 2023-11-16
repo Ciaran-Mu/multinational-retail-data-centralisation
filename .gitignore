@@ -162,3 +162,4 @@ cython_debug/
 # My custom files added to .gitignore
 db_creds.yaml
 data_cleaning_process.ipynb
+database_schema_process.ipynb

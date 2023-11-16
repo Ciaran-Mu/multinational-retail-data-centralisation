@@ -22,8 +22,8 @@ class DataExtractor:
             (DataFrame): pandas dataframe containing data from requested table
         '''
         engine = db_connector.init_db_engine()
-        with engine.connect() as conn:
-            return pd.read_sql_table(table_name, engine)
+        with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
+            return pd.read_sql_table(table_name, conn)
         # TODO: add error handling for ValueError Table ____ not found
 
     def retrieve_pdf_data(self, link: str):

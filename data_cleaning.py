@@ -100,8 +100,8 @@ class DataCleaning:
         card_details_df['card_number'] = pd.to_numeric(card_details_df['card_number'])
         # Convert the date payment confirmed to datetime
         card_details_df['date_payment_confirmed'] = pd.to_datetime(card_details_df['date_payment_confirmed'], format='mixed')
-        # Convert expiry date to datetime
-        card_details_df['expiry_date'] = pd.to_datetime(card_details_df['expiry_date'], format='%m/%y')
+        # Convert expiry date to datetime (needed to be removed for SQL part)
+        # card_details_df['expiry_date'] = pd.to_datetime(card_details_df['expiry_date'], format='%m/%y')
         # Reindex the dataframe
         card_details_df.reset_index(drop=True, inplace=True)
         return card_details_df
