@@ -1,5 +1,6 @@
 import pandas as pd
 from database_utils import DatabaseConnector
+from database_utils import DatabaseModifier
 from data_extraction import DataExtractor
 from data_cleaning import DataCleaning
 from sqlalchemy import text
@@ -74,229 +75,76 @@ print('\nExtracting, cleaning and uploading date details table: Done\n')
 print('Section 2: Developing the database schema using SQL')
 print('--------------------------------------------------------------------')
 
-# TODO: refactor these commands into funciton to avoid repetition
-engine = local_db.init_db_engine()
+local_db_manager = DatabaseModifier(local_db)
 
 # Modify the orders table
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    conn.execute(text('''ALTER TABLE orders_table
-                            ALTER COLUMN date_uuid TYPE UUID USING date_uuid::UUID;'''))
-    
-    conn.execute(text('''ALTER TABLE orders_table
-                            ALTER COLUMN user_uuid TYPE UUID USING user_uuid::UUID;'''))
-    
-    conn.execute(text('''ALTER TABLE orders_table
-                            ALTER COLUMN card_number TYPE TEXT;'''))
-    
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(card_number))
-                                            FROM orders_table;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE orders_table
-                            ALTER COLUMN card_number TYPE VARCHAR({varchar_length});'''))
-    
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(store_code))
-                                            FROM orders_table;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE orders_table
-                            ALTER COLUMN store_code TYPE VARCHAR({varchar_length});'''))
-    
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(product_code))
-                                            FROM orders_table;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE orders_table
-                            ALTER COLUMN product_code TYPE VARCHAR({varchar_length});'''))
-    
-    conn.execute(text('''ALTER TABLE orders_table
-                            ALTER COLUMN product_quantity TYPE SMALLINT;'''))
+local_db_manager.alter_column_type(table_name='orders_table', column_name='date_uuid', column_type='UUID')
+local_db_manager.alter_column_type(table_name='orders_table', column_name='user_uuid', column_type='UUID')
+local_db_manager.alter_column_type(table_name='orders_table', column_name='card_number', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='orders_table', column_name='store_code', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='orders_table', column_name='product_code', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='orders_table', column_name='product_quantity', column_type='SMALLINT')
 
 print('\nModifying the orders table: Done')
 
 # Modify the users table
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    conn.execute(text(f'''ALTER TABLE dim_users
-                            ALTER COLUMN first_name TYPE VARCHAR(255);'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_users
-                            ALTER COLUMN last_name TYPE VARCHAR(255);'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_users
-                            ALTER COLUMN date_of_birth TYPE DATE;'''))
-    
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(country_code))
-                                            FROM dim_users;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE dim_users
-                            ALTER COLUMN country_code TYPE VARCHAR({varchar_length});'''))
-    
-    conn.execute(text('''ALTER TABLE dim_users
-                            ALTER COLUMN user_uuid TYPE UUID USING user_uuid::UUID;'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_users
-                            ALTER COLUMN join_date TYPE DATE;'''))
+local_db_manager.alter_column_type(table_name='dim_users', column_name='first_name', column_type='VARCHAR', varchar_length=255)
+local_db_manager.alter_column_type(table_name='dim_users', column_name='last_name', column_type='VARCHAR', varchar_length=255)
+local_db_manager.alter_column_type(table_name='dim_users', column_name='date_of_birth', column_type='DATE')
+local_db_manager.alter_column_type(table_name='dim_users', column_name='country_code', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_users', column_name='user_uuid', column_type='UUID')
+local_db_manager.alter_column_type(table_name='dim_users', column_name='join_date', column_type='DATE')
 
 print('\nModifying the users table: Done')
     
 # Modifiy the stores table
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    conn.execute(text(f'''ALTER TABLE dim_store_details
-                            ALTER COLUMN longitude TYPE FLOAT(24);'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_store_details
-                            ALTER COLUMN locality TYPE VARCHAR(255);'''))
-    
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(store_code))
-                                            FROM dim_store_details;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE dim_store_details
-                            ALTER COLUMN store_code TYPE VARCHAR({varchar_length});'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_store_details
-                            ALTER COLUMN staff_numbers TYPE SMALLINT;'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_store_details
-                            ALTER COLUMN opening_date TYPE DATE;'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_store_details
-                            ALTER COLUMN store_type TYPE VARCHAR(255);'''))
-
-    conn.execute(text(f'''ALTER TABLE dim_store_details
-                            ALTER COLUMN latitude TYPE FLOAT(24);'''))
-    
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(country_code))
-                                            FROM dim_store_details;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE dim_store_details
-                            ALTER COLUMN country_code TYPE VARCHAR({varchar_length});'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_store_details
-                            ALTER COLUMN continent TYPE VARCHAR(255);'''))
-    
-    # All columns that are varchar/text are already N/A for web portal, lat and long are not compatible with 'N/A'
-
-    # conn.execute(text(f'''UPDATE dim_store_details
-    #                         SET country_code = NULL,
-    #                       WHERE
-    #                         store_type = 'Web Portal';'''))
+local_db_manager.alter_column_type(table_name='dim_store_details', column_name='longitude', column_type='FLOAT')
+local_db_manager.alter_column_type(table_name='dim_store_details', column_name='locality', column_type='VARCHAR', varchar_length=255)
+local_db_manager.alter_column_type(table_name='dim_store_details', column_name='store_code', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_store_details', column_name='staff_numbers', column_type='SMALLINT')
+local_db_manager.alter_column_type(table_name='dim_store_details', column_name='opening_date', column_type='DATE')
+local_db_manager.alter_column_type(table_name='dim_store_details', column_name='store_type', column_type='VARCHAR', varchar_length=255)
+local_db_manager.alter_column_type(table_name='dim_store_details', column_name='latitude', column_type='FLOAT')
+local_db_manager.alter_column_type(table_name='dim_store_details', column_name='country_code', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_store_details', column_name='continent', column_type='VARCHAR', varchar_length=255)
+# All columns that are varchar/text are already N/A for web portal, lat and long are not compatible with 'N/A'
 
 print('\nModifying the stores table: Done')
 
 # Modify the products table
 # Price already has £ removed
 # Add weight class
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    conn.execute(text(f'''  ALTER TABLE dim_products
-	                            ADD COLUMN IF NOT EXISTS weight_class VARCHAR(14);'''))
-    
-    conn.execute(text(f'''  UPDATE dim_products
-                            SET
-                                weight_class = 'Light'
-                            WHERE weight < 2;'''))
-    
-    conn.execute(text(f'''  UPDATE dim_products
-                            SET
-                                weight_class = 'Mid_Sized'
-                            WHERE weight >= 2 AND weight < 40;'''))
-    
-    conn.execute(text(f'''  UPDATE dim_products
-                            SET
-                                weight_class = 'Heavy'
-                            WHERE weight >= 40 AND weight < 140;'''))
-    
-    conn.execute(text(f'''  UPDATE dim_products
-                            SET
-                                weight_class = 'Truck_Required'
-                            WHERE weight >= 140;'''))
+local_db_manager.add_column(table_name='dim_products', column_name='weight_class', column_type='VARCHAR(14)')
+local_db_manager.update_weight_class(table_name='dim_products')
+
 # Change column types
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    conn.execute(text(f'''ALTER TABLE dim_products
-                            ALTER COLUMN product_price TYPE FLOAT(24);'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_products
-                            ALTER COLUMN weight TYPE FLOAT(24);'''))
-
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH("EAN"::TEXT))
-                                            FROM dim_products;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE dim_products
-                            ALTER COLUMN "EAN" TYPE VARCHAR({varchar_length});'''))
-
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(product_code))
-                                            FROM dim_products;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE dim_products
-                            ALTER COLUMN product_code TYPE VARCHAR({varchar_length});'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_products
-                            ALTER COLUMN date_added TYPE DATE;'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_products
-                            ALTER COLUMN uuid TYPE UUID USING uuid::UUID;'''))
-    
-    conn.execute(text(f'''  DO $$
-                            BEGIN
-                                IF EXISTS(SELECT *
-                                        FROM information_schema.columns
-                                        WHERE table_name = 'dim_products' AND column_name = 'removed')
-                                THEN
-                                    ALTER TABLE dim_products
-                                        RENAME COLUMN removed TO still_available;
-                                END IF;
-                            END $$;'''))
-    
-    conn.execute(text(f'''  DO $$
-                            BEGIN
-                                IF (SELECT data_type
-                                    FROM information_schema.columns
-                                    WHERE table_name = 'dim_products' AND column_name = 'still_available') = 'text'
-                                THEN
-                                    UPDATE dim_products
-                                        SET still_available = (still_available = 'Still_avaliable')::BOOL;
-                                    ALTER TABLE dim_products
-                                        ALTER COLUMN still_available TYPE BOOL USING still_available::BOOL;
-                                END IF;
-                            END $$;'''))
+local_db_manager.alter_column_type(table_name='dim_products', column_name='product_price', column_type='FLOAT')
+local_db_manager.alter_column_type(table_name='dim_products', column_name='weight', column_type='FLOAT')
+local_db_manager.alter_column_type(table_name='dim_products', column_name='"EAN"', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_products', column_name='product_code', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_products', column_name='date_added', column_type='DATE')
+local_db_manager.alter_column_type(table_name='dim_products', column_name='uuid', column_type='UUID')
+# Change column name of 'removed' and convert to boolean
+local_db_manager.alter_column_name(table_name='dim_products', old_column_name='removed', new_column_name='still_available')
+# Note the true string has an intentional typo as this matches what is in the records
+local_db_manager.alter_column_text_to_bool(table_name='dim_products', column_name='still_available', true_string='Still_avaliable')
 
 print('\nModifying the products table: Done')
     
 # Modify the dates table
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    conn.execute(text(f'''ALTER TABLE dim_date_times
-                            ALTER COLUMN month TYPE VARCHAR(2);'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_date_times
-                            ALTER COLUMN year TYPE VARCHAR(4);'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_date_times
-                            ALTER COLUMN day TYPE VARCHAR(2);'''))
-    
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(time_period))
-                                            FROM dim_date_times;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE dim_date_times
-                            ALTER COLUMN time_period TYPE VARCHAR({varchar_length});'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_date_times
-                            ALTER COLUMN date_uuid TYPE UUID USING date_uuid::UUID;'''))
+local_db_manager.alter_column_type(table_name='dim_date_times', column_name='month', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_date_times', column_name='year', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_date_times', column_name='day', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_date_times', column_name='time_period', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_date_times', column_name='date_uuid', column_type='UUID')
 
 print('\nModifying the dates table: Done')
 
 # Modify the card details table
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(card_number::TEXT))
-                                            FROM dim_card_details;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE dim_card_details
-                            ALTER COLUMN card_number TYPE VARCHAR({varchar_length});'''))
-    
-    max_length_query = conn.execute(text('''SELECT MAX(LENGTH(expiry_date::TEXT))
-                                            FROM dim_card_details;'''))
-    varchar_length = max_length_query.all()[0][0]
-    conn.execute(text(f'''ALTER TABLE dim_card_details
-                            ALTER COLUMN expiry_date TYPE VARCHAR({varchar_length});'''))
-    
-    conn.execute(text(f'''ALTER TABLE dim_card_details
-                            ALTER COLUMN date_payment_confirmed TYPE DATE;'''))
-    
+local_db_manager.alter_column_type(table_name='dim_card_details', column_name='card_number', column_type='VARCHAR')
+local_db_manager.alter_column_type(table_name='dim_card_details', column_name='expiry_date', column_type='VARCHAR') 
+local_db_manager.alter_column_type(table_name='dim_card_details', column_name='date_payment_confirmed', column_type='DATE')
+
 print('\nModifying the card details table: Done')
 
 input('''   \nThe next step is linking the tables together in the star-based schema by assigning the primary and foreign keys
@@ -304,123 +152,18 @@ input('''   \nThe next step is linking the tables together in the star-based sch
             \nDo you want to continue? Press Enter''')
 
 # Assign the primary keys in all the dimensions (dim) tables
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'dim_date_times' AND constraint_type = 'PRIMARY KEY')
-                                    THEN
-                                        ALTER TABLE dim_date_times
-                                            ADD PRIMARY KEY (date_uuid);
-                                END IF;
-                            END $$;'''))
-    
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'dim_users' AND constraint_type = 'PRIMARY KEY')
-                                    THEN
-                                        ALTER TABLE dim_users
-                                            ADD PRIMARY KEY (user_uuid);
-                                END IF;
-                            END $$;'''))
-    
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'dim_card_details' AND constraint_type = 'PRIMARY KEY')
-                                    THEN
-                                        ALTER TABLE dim_card_details
-                                            ADD PRIMARY KEY (card_number);
-                                END IF;
-                            END $$;'''))
-    
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'dim_store_details' AND constraint_type = 'PRIMARY KEY')
-                                    THEN
-                                        ALTER TABLE dim_store_details
-                                            ADD PRIMARY KEY (store_code);
-                                END IF;
-                            END $$;'''))
-    
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'dim_products' AND constraint_type = 'PRIMARY KEY')
-                                    THEN
-                                        ALTER TABLE dim_products
-                                            ADD PRIMARY KEY (product_code);
-                                END IF;
-                            END $$;'''))
+local_db_manager.set_primary_key(table_name='dim_date_times', column_name='date_uuid')
+local_db_manager.set_primary_key(table_name='dim_users', column_name='user_uuid')
+local_db_manager.set_primary_key(table_name='dim_card_details', column_name='card_number')
+local_db_manager.set_primary_key(table_name='dim_store_details', column_name='store_code')
+local_db_manager.set_primary_key(table_name='dim_products', column_name='product_code')
     
 # Assign the foreign keys in the orders table
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'orders_table' AND constraint_name = 'orders_table_date_uuid_fkey')
-                                    THEN
-                                        ALTER TABLE orders_table
-                                            ADD FOREIGN KEY (date_uuid)
-                                            REFERENCES dim_date_times(date_uuid);
-                                END IF;
-                            END $$;'''))
-    
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'orders_table' AND constraint_name = 'orders_table_user_uuid_fkey')
-                                    THEN
-                                        ALTER TABLE orders_table
-                                            ADD FOREIGN KEY (user_uuid)
-                                            REFERENCES dim_users(user_uuid);
-                                END IF;
-                            END $$;'''))
-    
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'orders_table' AND constraint_name = 'orders_table_card_number_fkey')
-                                    THEN
-                                        ALTER TABLE orders_table
-                                            ADD FOREIGN KEY (card_number)
-                                            REFERENCES dim_card_details(card_number);
-                                END IF;
-                            END $$;'''))
-    
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'orders_table' AND constraint_name = 'orders_table_store_code_fkey')
-                                    THEN
-                                        ALTER TABLE orders_table
-                                            ADD FOREIGN KEY (store_code)
-                                            REFERENCES dim_store_details(store_code);
-                                END IF;
-                            END $$;'''))
-    
-    conn.execute(text(f'''  DO $$
-                                BEGIN
-                                    IF NOT EXISTS(	SELECT *
-                                                    FROM information_schema.table_constraints
-                                                    WHERE table_name = 'orders_table' AND constraint_name = 'orders_table_product_code_fkey')
-                                    THEN
-                                        ALTER TABLE orders_table
-                                            ADD FOREIGN KEY (product_code)
-                                            REFERENCES dim_products(product_code);
-                                END IF;
-                            END $$;'''))
+local_db_manager.set_foreign_key(table_name='orders_table', column_name='date_uuid', ref_table_name='dim_date_times')
+local_db_manager.set_foreign_key(table_name='orders_table', column_name='user_uuid', ref_table_name='dim_users')
+local_db_manager.set_foreign_key(table_name='orders_table', column_name='card_number', ref_table_name='dim_card_details')
+local_db_manager.set_foreign_key(table_name='orders_table', column_name='store_code', ref_table_name='dim_store_details')
+local_db_manager.set_foreign_key(table_name='orders_table', column_name='product_code', ref_table_name='dim_products')
     
 print('\nCreating the star-based schema for tables: Done\n')
 

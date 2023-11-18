@@ -6,7 +6,6 @@ import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
 import io
 from tqdm import tqdm
-# import grequests
 
 class DataExtractor:
     
@@ -70,41 +69,22 @@ class DataExtractor:
         Returns:
             store_details (DataFrame): details of all stores in a pandas dataframe
         '''
+        # A note on the performance of this function:
+        # Requesting all the info from each store sequentially takes a considerable amuont of time, this can be improved by using the grequests package to perform the requests in parallel
+        # In testing this function written with the grequests package total time reduced from 173 to 112 seconds
+        # However this resulted in many HTTP Error 429 (too many requests), so this parallel modification was deemed not worth it in this context and was removed
+
         number_stores = self.list_number_of_stores(url, header)
 
-        data = []
+        response_data = []
         for store in tqdm(range(number_stores), desc='Retrieving stores data', unit='request'):
             endpoint = url + f'/store_details/{store}'
             response = requests.get(endpoint, headers=header)
-            data.append(response.json())
+            response_data.append(response.json())
 
-        store_details = pd.DataFrame.from_records(data)
+        store_details = pd.DataFrame.from_records(response_data)
         return store_details
         # TODO: add response code error handling
-
-    # def retrieve_stores_data_multi(self, url: str, header: dict):
-    #     # Alternate function that performs requests in parallel with grequests
-    #     # Requires import requests to be removed to avoid recursion error
-    #     # Reduced time from 173 seconds to 112 seconds
-    #     # Returned some 429 errors (though all 451 stores still came through)
-
-    #     # number_stores = self.list_number_of_stores(url, header)
-    #     data = []
-    #     start_time = time.time()
-
-    #     endpoints = [url + f'/store_details/{store}' for store in range(451)]
-        
-    #     multi_requests = (grequests.get(endpoint, headers=header) for endpoint in endpoints)
-    #     responses = grequests.map(multi_requests)
-
-    #     for response in responses:
-    #         print(response.status_code)
-    #         data.append(response.json())
-
-    #     end_time = time.time()
-    #     print(f'Requests took {end_time-start_time} seconds')
-    #     store_details = pd.DataFrame.from_records(data)
-    #     return store_details
 
     def extract_from_s3(self, s3_uri: str):
         '''
@@ -131,6 +111,8 @@ class DataExtractor:
             elif data['ContentType'] == 'application/json':
                 data_df = pd.read_json(io.BytesIO(data['Body'].read()))
 
+            return data_df
+
         except NoCredentialsError:
             print("AWS credentials not found. Please configure your credentials.")
 
@@ -140,4 +122,4 @@ class DataExtractor:
             else:
                 print("An error occurred:", e)
 
-        return data_df
+        # return data_df
