@@ -1,16 +1,16 @@
-import pandas as pd
 from database_utils import DatabaseConnector
 from database_utils import DatabaseModifier
 from data_extraction import DataExtractor
 from data_cleaning import DataCleaning
-from sqlalchemy import text
-from tabulate import tabulate
+from data_querying import DataQuerier
 
-# Initiate connection to legacy database
+
+# Initiate connection to databases
 local_db = DatabaseConnector(local=True)
 remote_db = DatabaseConnector(local=False)
 # Class instance for data extraction
 data_extractor = DataExtractor()
+
 
 # Extracting and cleaning data
 print('Section 1: Extracting and cleaning data')
@@ -68,7 +68,6 @@ dates_df = DataCleaning.clean_dates_data(dates_df)
 # print(dates_df.info())
 local_db.upload_to_db(dates_df, 'dim_date_times')
 print('\nExtracting, cleaning and uploading date details table: Done\n')
-
 
 
 # Developing the database schema using SQL
@@ -167,214 +166,40 @@ local_db_manager.set_foreign_key(table_name='orders_table', column_name='product
     
 print('\nCreating the star-based schema for tables: Done\n')
 
+
 # Querying the database using SQL
 print('Section 3: Querying the database')
 print('--------------------------------------------------------------------')
 
-engine = local_db.init_db_engine()
-
 print('\nQuery 1: How many stores does the business have and in which countries?')
-# Task 1
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    SELECT  country_code,
-                            COUNT(store_code) AS total_no_stores
-                    FROM dim_store_details
-                    GROUP BY country_code
-                    ORDER BY total_no_stores DESC;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
-
-input('\nContinue to next query? Press Enter')
+DataQuerier.Task_1_query(local_db)
 
 print('\nQuery 2: Which locations currently have the most stores?')
-# Task 2
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    SELECT  locality,
-                            COUNT(store_code) AS total_no_stores
-                    FROM dim_store_details
-                    GROUP BY locality
-                    ORDER BY total_no_stores DESC
-                    LIMIT 7;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
-
-input('\nContinue to next query? Press Enter')
+DataQuerier.Task_2_query(local_db)
 
 print('\nQuery 3: Which months produced the largest amount of sales?')
-# Task 3
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    SELECT	SUM(product_quantity * product_price) AS total_sales,
-                        month
-                    FROM orders_table
-                    JOIN
-                        dim_products ON orders_table.product_code = dim_products.product_code
-                    JOIN
-                            dim_date_times ON orders_table.date_uuid = dim_date_times.date_uuid
-                    GROUP BY month
-                    ORDER BY total_sales DESC
-                    LIMIT 6;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
-
-input('\nContinue to next query? Press Enter')
+DataQuerier.Task_3_query(local_db)
 
 print('\nQuery 4: How many sales are coming from online?')
-# Task 4
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    SELECT	COUNT(date_uuid) AS nnumber_of_sales,
-                            SUM(product_quantity) AS product_quantity_count,
-                            CASE
-                                WHEN store_type = 'Web Portal' THEN 'Web'
-                                ELSE 'Offline'
-                            END AS location
-                    FROM orders_table
-                    JOIN
-                        dim_store_details ON orders_table.store_code = dim_store_details.store_code
-                    GROUP BY location
-                    ORDER BY location DESC;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
-
-input('\nContinue to next query? Press Enter')
+DataQuerier.Task_4_query(local_db)
 
 print('\nQuery 5: What percentage of sales come through each type of store?')
-# Task 5
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    SELECT	store_type,
-                            SUM(product_quantity * product_price) AS total_sales,
-                            SUM(product_quantity * product_price) / (
-                                SELECT	SUM(product_quantity * product_price)
-                                FROM orders_table
-                                JOIN
-                                    dim_products ON orders_table.product_code = dim_products.product_code
-                            ) * 100 AS percentage_total
-                    FROM orders_table
-                    JOIN
-                        dim_products ON orders_table.product_code = dim_products.product_code
-                    JOIN
-                        dim_store_details ON orders_table.store_code = dim_store_details.store_code
-                    GROUP BY store_type
-                    ORDER BY percentage_total DESC;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
-
-input('\nContinue to next query? Press Enter')
+DataQuerier.Task_5_query(local_db)
 
 print('\nQuery 6: Which month in each year produced the highest cost of sales?')
-# Task 6
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    SELECT	SUM(product_quantity * product_price) AS total_sales,
-                            year,
-                            month
-                    FROM orders_table
-                    JOIN
-                        dim_products ON orders_table.product_code = dim_products.product_code
-                    JOIN
-                        dim_date_times ON orders_table.date_uuid = dim_date_times.date_uuid
-                    GROUP BY year, month
-                    ORDER BY total_sales DESC
-                    LIMIT 10;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
+DataQuerier.Task_6_query(local_db)
 
 print('''\nVariation of query 6: Which month in each year produced the highest cost of sales?
             \nIncluding only the highest earning months for each year''')
-# Task 6 variation - provide only the most performant month per each year
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    WITH sales_by_year AS (
-                        SELECT	SUM(product_quantity * product_price) AS total_sales,
-                                year,
-                                month
-                        FROM orders_table
-                        JOIN
-                            dim_products ON orders_table.product_code = dim_products.product_code
-                        JOIN
-                            dim_date_times ON orders_table.date_uuid = dim_date_times.date_uuid
-                        GROUP BY year, month
-                    ) SELECT	total_sales,
-                                year,
-                                month
-                    FROM sales_by_year
-                    WHERE total_sales IN (
-                            SELECT MAX(total_sales) OVER (PARTITION BY year) AS final_sales
-                            FROM sales_by_year
-                    )
-                    ORDER BY total_sales DESC
-                    LIMIT 10;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
-
-input('\nContinue to next query? Press Enter')
+DataQuerier.Task_6_query_variation(local_db)
 
 print('\nQuery 7: What is our staff headcount?')
-# Task 7
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    SELECT	SUM(staff_numbers) AS total_staff_numbers,
-                            country_code
-                    FROM dim_store_details
-                    GROUP BY country_code
-                    ORDER BY total_staff_numbers DESC;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
-
-input('\nContinue to next query? Press Enter')
+DataQuerier.Task_7_query(local_db)
 
 print('\nQuery 8: Which German store type is selling the most?')
-# Task 8
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    SELECT	SUM(product_quantity * product_price) AS total_sales,
-                            store_type,
-                            country_code		
-                    FROM orders_table
-                    JOIN
-                        dim_products ON orders_table.product_code = dim_products.product_code
-                    JOIN
-                        dim_store_details ON orders_table.store_code = dim_store_details.store_code
-                    GROUP BY country_code, store_type
-                    HAVING country_code = 'DE'
-                    ORDER BY total_sales;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
-
-input('\nContinue to next query? Press Enter')
+DataQuerier.Task_8_query(local_db)
 
 print('\nQuery 9: How quickly is the company making sales?')
-# Task 9
-with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
-    result = pd.read_sql_query('''
-                    WITH sales_intervals AS (
-                        SELECT	year,
-                                LEAD(TO_TIMESTAMP(year || '-' || month || '-' || day || ' ' || timestamp, 'YYYY-MM-DD HH24:MI:SS')::TIMESTAMP WITHOUT TIME ZONE, 1) OVER (
-                                    ORDER BY year,month, day
-                                ) - TO_TIMESTAMP(year || '-' || month || '-' || day || ' ' || timestamp, 'YYYY-MM-DD HH24:MI:SS')::TIMESTAMP WITHOUT TIME ZONE AS diff
-                        FROM dim_date_times
-                        ORDER BY year
-                    ) SELECT	year,
-                                AVG(diff) AS actual_time_taken
-                    FROM sales_intervals
-                    GROUP BY year
-                    ORDER BY actual_time_taken DESC
-                    LIMIT 5;
-                    ''', conn)
-
-print(tabulate(result, headers='keys', tablefmt='psql', showindex=False, floatfmt='.2f'))
+DataQuerier.Task_9_query(local_db)
 
 print('\nProgram completed successfully')

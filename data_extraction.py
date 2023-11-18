@@ -1,11 +1,13 @@
-import pandas as pd
-from tabula.io import read_pdf
-import requests
 from database_utils import DatabaseConnector
-import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
-import io
+from tabula.io import read_pdf
 from tqdm import tqdm
+
+import pandas as pd
+import requests
+import boto3
+import io
+
 
 class DataExtractor:
     
@@ -121,5 +123,3 @@ class DataExtractor:
                 print("The specified bucket does not exist.")
             else:
                 print("An error occurred:", e)
-
-        # return data_df
