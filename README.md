@@ -19,14 +19,34 @@ To install this Multinational Retail Data Centralisation project clone and enter
 git clone https://github.com/Ciaran-Mu/multinational-retail-data-centralisation.git
 cd multinational-retail-data-centralisation
 ```
-Then run the main file
+Before running the program, credentials for local and remote database access must be created in a secret file (not included in this repository) called `db_creds.yaml`. This credentials file should contain the following:
+
 ```
-python main.py
+RDS_HOST: #HOST
+RDS_PASSWORD: #PASSWORD
+RDS_USER: #USER
+RDS_DATABASE: #DATABASE
+RDS_PORT: #PORT
+
+LOCAL_HOST: #HOST
+LOCAL_PASSWORD: #PASSWORD
+LOCAL_USER: #USER
+LOCAL_DATABASE: #DATABASE
+LOCAL_PORT: #PORT
 ```
-Note that some functionality will not be accessible without the database credentials which are in a secret file db_creds.yaml
 
 ## Usage instructions
 
+Run the main file
+```
+python main.py
+```
+_Note that some functionality will not be accessible without the correct database credentials which are in a secret file `db_creds.yaml`._
+
+![Screenshot of Output 1](/Images/Screenshot1.png)
+![Screenshot of Output 2](/Images/Screenshot2.png)
+![Screenshot of Output 3](/Images/Screenshot3.png)
+![Screenshot of Output 4](/Images/Screenshot4.png)
 
 
 ## File structure
