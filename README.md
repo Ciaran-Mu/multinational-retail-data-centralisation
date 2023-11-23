@@ -43,15 +43,25 @@ python main.py
 ```
 _Note that some functionality will not be accessible without the correct database credentials which are in a secret file `db_creds.yaml`._
 
+The program will run through the sections of extracting data, cleaning data, uploading to new local database and finally querying the database.
+
+The following is the typical output of the program in the terminal.
+
 ![Screenshot of Output 1](/Images/Screenshot1.png)
 ![Screenshot of Output 2](/Images/Screenshot2.png)
 ![Screenshot of Output 3](/Images/Screenshot3.png)
-![Screenshot of Output 4](/Images/Screenshot4.png)
-
 
 ## File structure
 
+`database_utils.py` contains a classes 'DatabaseConnector' and 'DatabaseModifier' which initiate a connection to a database and modify an existing database, respectively.
 
+`data_extraction.py` contains a class 'DataExtractor' which contains methods for extracting data from multiple different sources.
+
+`data_cleaning.py` contains a class 'DataCleaning' which contains static methods for performing the data cleaning steps.
+
+`data_querying.py` contains a class 'DataQuerier' which contains static methods for a set of specific SQL queries to be sent to a database.
+
+`main.py` contains the main program which calls all the relevant methods of the classes defined within the above python files.
 
 ## License information
 

@@ -71,7 +71,6 @@ class DataCleaning:
         legacy_users_df['phone_number'].replace('\(0\)', '', regex=True, inplace=True)
         # Then swap country codes for zero and remove all non numeric characters
         legacy_users_df['phone_number'].replace({r'\+44': '0', r'\+49': '0', r'\(': '', r'\)': '', r'-': '', r' ': ''}, regex=True, inplace=True)
-        # TODO: consider reindexing dataframe
         return legacy_users_df
 
     @staticmethod

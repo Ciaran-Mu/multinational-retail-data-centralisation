@@ -10,6 +10,9 @@ import io
 
 
 class DataExtractor:
+    '''
+    This class is used to extract data from multiple sources.
+    '''
     
     def read_rds_table(self, db_connector: DatabaseConnector, table_name: str):
         '''
@@ -25,7 +28,6 @@ class DataExtractor:
         engine = db_connector.init_db_engine()
         with engine.execution_options(isolation_level='AUTOCOMMIT').connect() as conn:
             return pd.read_sql_table(table_name, conn)
-        # TODO: add error handling for ValueError Table ____ not found
 
     def retrieve_pdf_data(self, link: str):
         '''
@@ -41,7 +43,6 @@ class DataExtractor:
         df_list = read_pdf(link, pages='all')
         data_frame = pd.concat(df_list, ignore_index=True)
         return data_frame
-        # TODO: add error handling on link string input and read_pdf validity
 
     def list_number_of_stores(self, url: str, header: dict):
         '''
@@ -58,7 +59,6 @@ class DataExtractor:
         response = requests.get(endpoint, headers=header)
         data = response.json()
         return data['number_stores']
-        # TODO: add response code error handling
 
     def retrieve_stores_data(self, url: str, header: dict):
         '''
@@ -86,7 +86,6 @@ class DataExtractor:
 
         store_details = pd.DataFrame.from_records(response_data)
         return store_details
-        # TODO: add response code error handling
 
     def extract_from_s3(self, s3_uri: str):
         '''

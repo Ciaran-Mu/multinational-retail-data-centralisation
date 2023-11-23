@@ -20,6 +20,14 @@ def user_continue(func):
 
 class DataQuerier:
 
+    '''
+    This class is used to send specific PostgreSQL queries to a database and print the results to the terminal.
+    Each specific query is contained within it's own class method.
+    '''
+    # This implentation of individual class methods for each query lacks modularity and reuse of methods.
+    # However this class does make the code for querying of the database consistent with the rest of this project.
+    # In addition the SQL queries themselves shgould be easily readable in this format (i.e. without excessive fstrings use) 
+
     @staticmethod
     @user_continue
     @query_printer
